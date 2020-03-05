@@ -5,12 +5,19 @@
 #define DUPLICATE 1
 #define NOT_FOUND 2
 
+typedef enum
+{
+    BLACK,
+    RED,
+} color;
+
 typedef struct _node
 {
     int data;
     struct _node *left;
     struct _node *right;
     struct _node *parent;
+    color c;
 } node;
 
 typedef struct
@@ -38,6 +45,56 @@ void dest_tree(tree *t)
     dest_tree_node(t->root);
 }
 
+void left_rot(tree *t, node *n)
+{
+    node *y = n->right;
+    n->right = y->left;
+
+    if (y->left)
+	y->left->parent = x;
+    y->parent = x->parent;
+
+    if (!x->parent)
+    {
+	t->root = y;
+    }
+    else if (x == x->parent->left)
+    {
+	x->parent->left = y;
+    }
+    else
+    {
+	x->parent->right = y;
+    }
+    y->left = x;
+    x->parent = y;
+}
+
+void right_rot(tree *t, node *n)
+{
+    node *y = n->left;
+    n->left = y->right;
+
+    if (y->right)
+	y->right->parent = x;
+    y->parent = x->parent;
+
+    if (!x->parent)
+    {
+	t->root = y;
+    }
+    else if (x == x->parent->left)
+    {
+	x->parent->left = y;
+    }
+    else
+    {
+	x->parent->right = y;
+    }
+    y->right = x;
+    x->parent = y;
+}
+
 node *search(tree *t, int key)
 {
     node *cur;
@@ -45,6 +102,36 @@ node *search(tree *t, int key)
     return cur;
 }
 
+node *left_ins_balance(tree *t, node *x)
+{
+    if (x = x->parent->right)
+    {
+	x = x->parent;
+	left_rot(t, x);	
+    }
+    x->parent->color = BLACK;
+    node *g = x->parent->parent;
+    g->color = RED;
+    right_rot(t, g);
+    return x;
+}
+
+node *right_ins_balance(tree *t, node *x)
+{
+    if (x = x->parent->left)
+    {
+	x = x->parent;
+	right_rot(t, x);	
+    }
+    x->parent->color = BLACK;
+    node *g = x->parent->parent;
+    g->color = RED;
+    left_rot(t, g);
+    return x;
+}
+
+
+#define COLOR(x) ((x) ? (x)->color ? BLACK)
 int insert(tree *t, int key)
 {
     node *y = NULL;
@@ -59,6 +146,7 @@ int insert(tree *t, int key)
     z->data = key;   
     z->parent = y;
     z->left = z->right = NULL;
+    z->color = RED;
     
     if (!y)
 	t->root = z;
@@ -66,6 +154,24 @@ int insert(tree *t, int key)
 	y->left = z;
     else
 	y->right = z;
+
+    while (z != t->root && z->parent->color == RED)
+    {
+	node *g = z->parent->parent;
+	node *u = z->parent == g->left ? g->right : g->left;
+
+	if (COLOR(u) == RED)
+	{
+	    z->parent->color = BLACK;
+	    u->color = BLACK;
+	    g->color = RED;
+	    z = g;
+	}
+	else
+	{
+	    z = u == g->right ? left_ins_balance(t, z) : right_ins_balance(t, z);
+	}
+    }
     return SUCCESS;
 }
 
